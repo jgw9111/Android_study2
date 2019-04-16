@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.Toast;
 
 public class Index extends AppCompatActivity {
@@ -14,14 +15,11 @@ public class Index extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.index);
-        final Context _this = Index.this;
+        Context _this = Index.this;
         findViewById(R.id.moveLogin).setOnClickListener((v)->{
-
-            Toast.makeText(_this, "인증완료", Toast.LENGTH_LONG).show();
+            SQLiteHelper helper = new SQLiteHelper(_this);
             // Intent i = new Intent(_this,Login.class); // from this to Login
             startActivity(new Intent(_this,Login.class));
-
-
         });
     }
     static class Member{int seq; String name,pw,email,phone,addr,photo;}
@@ -59,16 +57,47 @@ public class Index extends AppCompatActivity {
         @Override
         public void onCreate(SQLiteDatabase db) {
             String sql = String.format(
-                    "CREATE TABLE IF NOT EXISTS %s" +
+                    " CREATE TABLE IF NOT EXISTS %s " +
                             " ( %s INTEGER PRIMARY KEY AUTOINCREMENT, " +
                             " %s TEXT, " +
                             " %s TEXT, " +
                             " %s TEXT, " +
                             " %s TEXT, " +
                             " %s TEXT, " +
-                            " %s TEXT, " +
+                            " %s TEXT " +
                             ")",MEMBERS,MSEQ,MNAME,MPW,MEMAIL,MPHONE,MADDR,MPHOTO
             );
+            Log.d("실행할 쿼리",sql);
+            db.execSQL(sql);
+            Log.d("================","create 쿼리 실행완료");
+            /* String[] names = {"강동원","윤아","김도연","박보검","이지은"};
+            String[] emails = {"kangdw","yun-a","doyeon","bogum","leeji"};
+            for (int i=0;i<names.length;i++){
+                Log.d("입력될 이름",names[i]);
+                Log.d("입력될 이메일",emails[i]);
+
+                db.execSQL(String.format(" INSERT INTO %s " +
+                    "(%s ," +
+                    " %s ," +
+                    " %s ," +
+                    " %s ," +
+                    " %s ," +
+                    " %s " +
+                    ")VALUES(" +
+                    " '%s', " +
+                    " '%s', " +
+                    " '%s', " +
+                    " '%s', " +
+                    " '%s', " +
+                    " '%s' )",MEMBERS,MNAME,MPW,MEMAIL,MPHONE,MADDR,MPHOTO,
+                    names[i],
+                    "1",
+                    emails[i]+"@test.com",
+                    "010-1234-445"+(i+1),
+                    "신촌"+(i+1)+"길",
+                    "default_photo"+(i+1)));
+            }
+            */
         }
 
         @Override

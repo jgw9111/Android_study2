@@ -1,6 +1,7 @@
 package com.example.contacts;
 
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -10,11 +11,13 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import static com.example.contacts.Index.*;
 
 import java.util.ArrayList;
 
@@ -29,25 +32,45 @@ public class MemberList extends AppCompatActivity {
         ListView memberList = findViewById(R.id.memberList);
 
         memberList.setAdapter(
-                new MemberAdapter(_this,(ArrayList<Index.Member>)new Index.ISupplier() {
+                new MemberAdapter(_this,(ArrayList<Member>)new ISupplier() {
                     @Override
                     public Object get() {
                         return query.get();
                     }
                 }.get()) //선언과 동시에 실행후 값이 사라짐
         );
+             memberList.setOnItemClickListener((AdapterView<?> p,View v,int i,long l)->{
+                 Member m = (Member) memberList.getItemAtPosition(i);
+                 Toast.makeText(_this,m.name,Toast.LENGTH_LONG).show();
+                 Intent intent =new Intent(_this,MemberDetail.class);
+                 intent.putExtra("seq",m.seq);
+                 startActivity(intent);
+             });
+             //---memberList.setOnItemLongClickListener(()->{});
+
+        /*memberList.setAdapter(
+                new ImageAdapter(_this,(ArrayList<Member>)new ISupplier() {
+                    @Override
+                    public Object get() {
+                        Toast.makeText(_this,"img",Toast.LENGTH_LONG).show();
+                        return query.get();
+                    }
+                }.get())
+        );*/
+
 
     }
-    private class MemberListQuery extends Index.QueryFactory{
+
+    private class MemberListQuery extends QueryFactory{
         SQLiteOpenHelper helper;
         public MemberListQuery(Context _this) {
             super(_this);
-            helper = new Index.SQLiteHelper(_this);
+            helper = new SQLiteHelper(_this);
         }
 
         @Override
         public SQLiteDatabase getDatabase() {
-            return helper.getWritableDatabase();
+            return helper.getReadableDatabase();
         }
 
     }
@@ -56,22 +79,22 @@ public class MemberList extends AppCompatActivity {
         public ItemList(Context _this) {
             super(_this);
         }
-        public ArrayList<Index.Member> get(){
-            ArrayList<Index.Member> list = new ArrayList<>();
+        public ArrayList<Member> get(){
+            ArrayList<Member> list = new ArrayList<>();
             Cursor c = this.getDatabase().rawQuery(
                     "  SELECT * FROM MEMBER ",null
             );
-            Index.Member m = null;
+            Member m = null;
             if(c!=null){
                 while (c.moveToNext()){
-                    m = new Index.Member();
-                    m.seq = Integer.parseInt(c.getString(c.getColumnIndex(Index.MSEQ)));
-                    m.name = c.getString(c.getColumnIndex(Index.MNAME));
-                    m.pw = c.getString(c.getColumnIndex(Index.MPW));
-                    m.email = c.getString(c.getColumnIndex(Index.MEMAIL));
-                    m.addr = c.getColumnName(c.getColumnIndex(Index.MADDR));
-                    m.phone = c.getColumnName(c.getColumnIndex(Index.MPHONE));
-                    m.photo = c.getColumnName(c.getColumnIndex(Index.MPHOTO));
+                    m = new Member();
+                    m.seq = Integer.parseInt(c.getString(c.getColumnIndex(MSEQ)));
+                    m.name = c.getString(c.getColumnIndex(MNAME));
+                    m.pw = c.getString(c.getColumnIndex(MPW));
+                    m.email = c.getString(c.getColumnIndex(MEMAIL));
+                    m.addr = c.getString(c.getColumnIndex(MADDR));
+                    m.phone = c.getString(c.getColumnIndex(MPHONE));
+                    m.photo = c.getString(c.getColumnIndex(MPHOTO));
                     Log.d("멤버정보 : \n",m.name);
                     list.add(m);
                 }
@@ -80,14 +103,25 @@ public class MemberList extends AppCompatActivity {
             }
             return list;
         }
+    /*private class PhotoListQuery extends QueryFactory{
+        SQLiteOpenHelper helper;
+        public PhotoListQuery(Context _this) {
+            super(_this);
+            helper = new SQLiteHelper(_this);
+        }
 
+        @Override
+        public SQLiteDatabase getDatabase() {
+            return null;
+        }
+    }*/
     }
     private class MemberAdapter extends BaseAdapter{
-        ArrayList<Index.Member> list;
+        ArrayList<Member> list;
         LayoutInflater inflater;
         Context _this;
 
-        public MemberAdapter(Context _this,ArrayList<Index.Member> list) {
+        public MemberAdapter(Context _this,ArrayList<Member> list) {
             this.list = list;
             this._this = _this;
             this.inflater =LayoutInflater.from(_this);
@@ -121,6 +155,26 @@ public class MemberList extends AppCompatActivity {
             }else{
                 holder = (ViewHolder) v.getTag();
             }
+            ItemPhoto query = new ItemPhoto(_this);
+            query.seq = list.get(i).seq+"";
+            holder.photo
+                    .setImageDrawable(
+                            getResources()
+                                    .getDrawable(
+                                            getResources()
+                                                    .getIdentifier(
+                                                            _this.getPackageName()+":drawable/"+
+                                                                    ((String) new ISupplier() {
+                                                                @Override
+                                                                public Object get() {
+                                                                    return query.get();
+                                                                }
+                                                            }.get()),
+                                                            null,
+                                                            null),
+                                            _this.getTheme()
+                                    )
+                    );
             holder.name.setText(list.get(i).name);
             holder.phone.setText(list.get(i).phone);
             return v;
@@ -131,6 +185,37 @@ public class MemberList extends AppCompatActivity {
         TextView name,phone;
     }
 
+    private class MemberPhotoQuery extends QueryFactory{
+        SQLiteOpenHelper helper;
+        public MemberPhotoQuery(Context _this) {
+            super(_this);
+            helper = new SQLiteHelper(_this);
+        }
+
+        @Override
+        public SQLiteDatabase getDatabase() {
+            return helper.getReadableDatabase();
+        }
+    }
+    private class ItemPhoto extends MemberListQuery{
+        String seq;
+        public ItemPhoto(Context _this) {
+            super(_this);
+        }
+        public String get(){
+            Cursor c = getDatabase().rawQuery(String.format(
+                    " SELECT %s FROM %s " +
+                            " WHERE %s LIKE '%s' ", MPHOTO, MEMBERS, MSEQ, seq),null
+            ); //super.getDatabase() super.생략
+            String result = "";
+            if(c!=null){
+                if(c.moveToNext()){
+                    result = c.getString(c.getColumnIndex(MPHOTO));
+                }
+            }
+            return result;
+        }
+    }
     /*static abstract class QueryFactory{
         Context _this;
         public QueryFactory(Context _this){
@@ -141,14 +226,14 @@ public class MemberList extends AppCompatActivity {
     static class SQLiteHelper extends SQLiteOpenHelper{
 
         public SQLiteHelper(Context context) {
-            super(context, Index.DBNAME, null, 1);
+            super(context, DBNAME, null, 1);
             this.getWritableDatabase();
         }
 
         @Override
         public void onCreate(SQLiteDatabase db) {
             db.rawQuery(String.format(
-                    " SELECT * FROM %s ",Index.MEMBERS
+                    " SELECT * FROM %s ",MEMBERS
             ),null);
         }
 
